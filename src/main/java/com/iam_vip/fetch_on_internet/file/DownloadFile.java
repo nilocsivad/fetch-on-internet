@@ -66,7 +66,7 @@ public class DownloadFile {
 				
 				BufferedOutputStream out = new BufferedOutputStream( new FileOutputStream( out_file ) );
 				
-				byte[] buf = new byte[ 5 * 1024 * 1024 ];
+				byte[] buf = new byte[ 24 * 1024 * 1024 ];
 				
 				int len = 0;
 				
