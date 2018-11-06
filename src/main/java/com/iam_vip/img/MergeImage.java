@@ -12,6 +12,8 @@ import javax.imageio.ImageIO;
 
 import org.junit.Test;
 
+import com.iam_vip.util.DTUtil;
+
 /**
  * @author Colin
  */
@@ -38,16 +40,55 @@ public class MergeImage {
 	
 	/**
 	 * @throws IOException
+	 * @throws InterruptedException 
 	 */
-	public void MergePPT1() throws IOException {
+	public void MergePPT1() throws IOException, InterruptedException {
 		
-		File src_f = new File( "/", "‎⁨Volumes/ddd/University-English-Others/通用英语1-姜芸/通用1-U4-PPT-截图/⁩" );
-		System.out.println( src_f.getAbsolutePath() );
+		File src_f = new File( "D:\\University-English-Others\\通用英语1-姜芸\\通用1-U4-PPT-截图\\" );
+		System.out.println( "Merge the pictures from " + src_f.getAbsolutePath() );
 		
-		File[] imgs = src_f.listFiles();
+		File[] imgs = src_f.listFiles( ( f, n ) -> {
+			return f.isDirectory() && n.endsWith( ".png" );
+		});
 		
-		for ( File f : imgs ) {
-			System.out.println( f.getAbsolutePath() );
+		int len = imgs.length;
+		
+		BufferedImage[] images = new BufferedImage[ len ];
+		int max_width = 0;
+		int max_height = 0;
+	
+		for ( int j = 0; j < len; ++j ) {
+			
+				BufferedImage cur_img = ImageIO.read( imgs[j] );
+				images[j] = cur_img;
+				
+				int cur_w = cur_img.getWidth();
+				int cur_h = cur_img.getHeight();
+				
+				max_width = cur_w > max_width ? cur_w : max_width;
+				max_height = cur_h > max_height ? cur_h : max_height;
+		}
+		
+		
+		int include = 100;
+		if ( include > len ) include = len;
+		int group_len = len % include == 0 ? len / include : len / include + 1;
+		
+		for ( int k = 0; k < group_len; ++k ) {
+				
+				File to = new File( src_f, src_f.getName() + "-merge-" + DTUtil.formatAS(2) + ".jpg" );
+				
+				BufferedImage[] buf = Arrays.copyOfRange( images, k * include, k * include + include );
+				
+				///BufferedImage save_img = mergeHorizontal( max_width, max_height, buf );
+				BufferedImage save_img = mergeVertical( max_width, max_height, buf );
+				///BufferedImage save_img = mergeDoubleVertical( max_width, 160, max_height, 0, buf );
+				
+				ImageIO.write( save_img, "JPG", to );
+				
+				System.out.println( to.getAbsolutePath() );
+				
+				Thread.sleep(1);
 		}
 		
 	}
@@ -174,41 +215,60 @@ public class MergeImage {
 	/**
 	 * /// 图片纵向上下顺序合并 ///
 	 * @param img_w 图片宽度
+	 * @param img_h 图片高度
+	 * @param images 要合并的图片数组
+	 * @return 合成后的图片
+	 */
+	public BufferedImage mergeVertical( int img_w, int img_h, BufferedImage... images ) {
+		return mergeVertical(img_w, 10, img_h, 10, images);
+	}
+	
+	/**
+	 * /// 图片纵向上下顺序合并 ///
+	 * @param img_w 图片宽度
 	 * @param add_w 图片左右留白宽度
 	 * @param img_h 图片高度
 	 * @param add_h 图片上下留白高度
 	 * @param images 要合并的图片数组
 	 * @return 合成后的图片
 	 */
-	public BufferedImage mergeVertical( int img_max_width, int img_max_height, BufferedImage... images ) {
+	public BufferedImage mergeVertical( int img_w, int add_w, int img_h, int add_h, BufferedImage... images ) {
 		
-			int final_w = img_max_width, final_h = images.length * img_max_height;
+			/// 最终合成的图片宽度与高度 ///
+			int final_w = img_w + add_w, final_h = 0;
 			
-			BufferedImage save_img = new BufferedImage( final_w, final_h, BufferedImage.TYPE_INT_RGB );
+			for ( BufferedImage img0 : images ) {
+				final_h += img0.getHeight() + add_h;
+			}
 			
-			int[] white = new int[ img_max_height * img_max_width ];
+			/// 最终合成的图片对象，并初始化为白色背景 ///
+			BufferedImage final_img = new BufferedImage( final_w, final_h, BufferedImage.TYPE_INT_RGB );
+			
+			int[] white = new int[ final_w * final_h ];
 			for ( int i = 0; i < white.length; ++i ) {
 					white[i] = 0xffffff;
 			}
+			final_img.setRGB( 0, 0, final_w, final_h, white, 0, final_w );
 			
-			for ( int i = 0; i < images.length; ++i ) {
-				
-					save_img.setRGB( 0, i * img_max_height, img_max_width, img_max_height, white, 0, img_max_width );
-				
-					BufferedImage img0 = images[i];
+			/// 当前写图片到了横纵坐标的多少像素 ///
+			int calc_h = 0;
+			
+			int half_add_h = add_h / 2, half_add_w = add_w / 2;
+			
+			for ( BufferedImage img0 : images ) {
 					
 					int img0_w = img0.getWidth();
 					int img0_h = img0.getHeight();
 					
 					int[] buf = new int[ img0_w * img0_h ];
-					
 					buf = img0.getRGB( 0, 0, img0_w, img0_h, buf, 0, img0_w );
 					
-					save_img.setRGB( 0, i * img_max_height, img0_w, img0_h, buf, 0, img0_w );
+					final_img.setRGB( half_add_w, calc_h + half_add_h, img0_w, img0_h, buf, 0, img0_w );
 				
+					calc_h += img0_h + add_h;
 			}
 			
-			return save_img;
+			return final_img;
 		
 	}
 	
