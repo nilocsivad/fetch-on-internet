@@ -34,8 +34,8 @@ public class MergeImage {
 	public void TestImageMerge() throws Exception {
 			
 		//MergeEnglish1();
-			
-		MergePPT1();	
+		
+		MergePPT1( "" );	
 		
 	}
 	
@@ -46,9 +46,9 @@ public class MergeImage {
 	 * @throws IOException
 	 * @throws InterruptedException 
 	 */
-	public void MergePPT1() throws IOException, InterruptedException {
+	public void MergePPT1( String dir ) throws IOException, InterruptedException {
 		
-		File src_f = new File( "/Users/Colin/Documents/English-Class/通用英语1-姜芸/通用1-U1-PPT-截图" );
+		File src_f = new File( dir );
 		System.out.println( "Merge the pictures from \r\n" + src_f.getAbsolutePath() );
 		
 		int len = 0;
@@ -67,9 +67,12 @@ public class MergeImage {
 			
 			List<File> list = Arrays.asList( imgs );
 			Collections.sort( list, ( f1, f2 ) -> {
-				String s1 = f1.getName().split( "at" )[1].replace( " ", "" ).replace( ".", "" );
-				String s2 = f2.getName().split( "at" )[1].replace( " ", "" ).replace( ".", "" );
-				return s1.compareTo( s2 );
+				///String s1 = f1.getName().split( "at" )[1].replace( " ", "" ).replace( ".", "" );
+				///String s2 = f2.getName().split( "at" )[1].replace( " ", "" ).replace( ".", "" );
+				///return s1.compareTo( s2 );
+				String[] a1 = f1.getName().replace( ".png", "" ).split( "-" );
+				String[] a2 = f2.getName().replace( ".png", "" ).split( "-" );
+				return Integer.parseInt( a1[ a1.length - 1 ] ) - Integer.parseInt( a2[ a2.length - 1 ] );
 			});
 			
 			for ( File f : list ) {
@@ -79,7 +82,7 @@ public class MergeImage {
 		
 		BufferedImage[] images = bufs.toArray( new BufferedImage[0] );
 		
-		int include = 100;
+		int include = 10;
 		if ( include > len ) include = len;
 		int group_len = len % include == 0 ? len / include : len / include + 1;
 		
@@ -87,17 +90,17 @@ public class MergeImage {
 				
 				File to = new File( src_f, src_f.getName() + "-merge-" + DTUtil.formatAS(2) + ".jpg" );
 				
-				BufferedImage[] buf = Arrays.copyOfRange( images, k * include, k * include + include );
+				BufferedImage[] buf = Arrays.copyOfRange( images, k * include, k * include + ( k == group_len - 1 ? ( len % include == 0 ? include : len % include ) : include ) );
 				
 				///BufferedImage save_img = mergeHorizontal( max_width, max_height, buf );
-				BufferedImage save_img = mergeVertical( 30, 30, buf );
+				BufferedImage save_img = mergeVertical( 30, 60, buf );
 				///BufferedImage save_img = mergeDoubleVertical( max_width, 160, max_height, 0, buf );
 				
 				ImageIO.write( save_img, "JPG", to );
 				
 				System.out.println( "Then save at \r\n" + to.getAbsolutePath() );
 				
-				Thread.sleep(1);
+				Thread.sleep(1000);
 		}
 		
 	}
