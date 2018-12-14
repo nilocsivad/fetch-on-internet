@@ -36,6 +36,7 @@ public class MergeImage {
 	@Test
 	public void TestImageMerge() throws Exception {
 			
+		
 		// MergeEnglish1();
 			
 		// MergePPT1();	

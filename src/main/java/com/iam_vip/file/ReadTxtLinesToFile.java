@@ -26,7 +26,7 @@ public class ReadTxtLinesToFile {
 	public static void main(String[] args) throws Exception {
 		
 		
-		String txt_path = "xxxxxx.txt";
+		String txt_path = "xxxx.txt";
 		
 		
 		File txt_file = new File(txt_path);
