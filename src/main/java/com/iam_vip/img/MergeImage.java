@@ -36,11 +36,11 @@ public class MergeImage {
 	@Test
 	public void TestImageMerge() throws Exception {
 			
-		//MergeEnglish1();
+		// MergeEnglish1();
 			
-		//MergePPT1();	
+		// MergePPT1();	
 		
-		//MergeByV( "" );
+		// MergeByV( "" );
 		
 	}
 	
