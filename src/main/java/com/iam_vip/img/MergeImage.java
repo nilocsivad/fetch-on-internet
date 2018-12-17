@@ -99,13 +99,15 @@ public class MergeImage {
 		}
 		
 		String content = JOptionPane.showInputDialog( "The height of the files in this directory is " 
-				+ full_height + " How tall is for per picture? (A number, please!)", 1000 );
+				+ full_height + " How tall is for per picture? (A number, please!)", 0 );
 		int height = Integer.parseInt( content );
 		
 		/// 要合并的图片临时集合 ///
 		List<BufferedImage> temporary = new ArrayList<>( 20 );
 		
 		int tmp_h = 0; /// 计算图片高度临时变量 ///
+		
+		StringBuffer buf = new StringBuffer();
 		
 		for ( BufferedImage img : images ) {
 			
@@ -116,6 +118,8 @@ public class MergeImage {
 				
 				File to = new File( src_f, src_f.getName() + "-merge-" + DTUtil.formatA(2) + "." + formatName );
 				System.out.println( to.getAbsolutePath() );
+				
+				buf.append( to.getAbsolutePath() + "\r\n" );
 				
 				BufferedImage save_img = mergeVertical( 40, 40, temporary.toArray( new BufferedImage[0] ) );
 				ImageIO.write( save_img, formatName, to );
@@ -133,9 +137,13 @@ public class MergeImage {
 			File to = new File( src_f, src_f.getName() + "-merge-" + DTUtil.formatA(2) + "." + formatName );
 			System.out.println( to.getAbsolutePath() );
 			
+			buf.append( to.getAbsolutePath() + "\r\n" );
+			
 			BufferedImage save_img = mergeVertical( 40, 40, temporary.toArray( new BufferedImage[0] ) );
 			ImageIO.write( save_img, formatName, to );
 		}
+		
+		JOptionPane.showMessageDialog( null, buf.toString() );
 		
 	}
 	
