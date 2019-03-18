@@ -5,13 +5,16 @@ package com.iam_vip.img;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import javax.imageio.ImageIO;
+import javax.swing.JOptionPane;
 
 import org.junit.Test;
 
@@ -32,10 +35,7 @@ public class MergeImage {
 	
 	@Test
 	public void TestImageMerge() throws Exception {
-			
-		//MergeEnglish1();
 		
-		MergePPT1( "" );	
 		
 	}
 	
@@ -46,129 +46,98 @@ public class MergeImage {
 	 * @throws IOException
 	 * @throws InterruptedException 
 	 */
-	public void MergePPT1( String dir ) throws IOException, InterruptedException {
+	public void MergeByV( String directory ) throws IOException, InterruptedException {
+		this.MergeByV(directory, null);
+	}
+	
+	/**
+	 * /// 自动按时间顺序排序,之后按给出的最大高度合并 ///
+	 * @throws IOException
+	 * @throws InterruptedException 
+	 */
+	public void MergeByV( String directory, FilenameFilter filter ) throws IOException, InterruptedException {
 		
-		File src_f = new File( dir );
-		System.out.println( "Merge the pictures from \r\n" + src_f.getAbsolutePath() );
+		File src_f = new File( directory );
+		System.out.println( "Merge the pictures from " + src_f.getAbsolutePath() );
 		
-		int len = 0;
-		List<BufferedImage> bufs = new ArrayList<>( 150 );
-		{
-			File[] imgs = src_f.listFiles( ( f, n ) -> {
-				return f.isDirectory() && n.endsWith( ".png" );
+		/// 扫描图片文件 ///
+		File[] fs = filter == null ? src_f.listFiles() : src_f.listFiles( filter );
+		int len = fs.length;
+		
+		String formatName = suffix( fs[0] );
+		
+		/// 初始化图片集合 ///
+		BufferedImage[] images = null; 
+		int max_width = 0;   /// 所有图片的最宽的图片像素 ///
+		int max_height = 0;  /// 所有图片的最高的图片像素 ///
+		int full_height = 0; /// 所有图片的高度总合 ///
+		
+		{ /// 转换文件为图片对象 ///
+			List<File> list = Arrays.asList( fs );
+			Collections.sort( list, new Comparator<File>() { /// 按照时间进行排序 ///
+				public int compare(File o1, File o2) { return (int) (o1.lastModified() - o2.lastModified()); }
 			});
-			
-			len = imgs.length;
-			
-			if ( len == 0 ) {
-				System.err.println( "The folder contains 0 files." );
-				return;
+			/// 加载文件并转换为图片对象 ///
+			List<BufferedImage> temporary = new ArrayList<>( len + 1 );
+			for ( File itm : list ) {
+				BufferedImage img0 = ImageIO.read( itm );
+				if ( img0 == null ) continue;
+				temporary.add( img0 );
+				int cur_w = img0.getWidth();
+				int cur_h = img0.getHeight();
+				full_height += cur_h;
+				max_width = cur_w > max_width ? cur_w : max_width;
+				max_height = cur_h > max_height ? cur_h : max_height;
 			}
-			
-			List<File> list = Arrays.asList( imgs );
-			Collections.sort( list, ( f1, f2 ) -> {
-				///String s1 = f1.getName().split( "at" )[1].replace( " ", "" ).replace( ".", "" );
-				///String s2 = f2.getName().split( "at" )[1].replace( " ", "" ).replace( ".", "" );
-				///return s1.compareTo( s2 );
-				String[] a1 = f1.getName().replace( ".png", "" ).split( "-" );
-				String[] a2 = f2.getName().replace( ".png", "" ).split( "-" );
-				return Integer.parseInt( a1[ a1.length - 1 ] ) - Integer.parseInt( a2[ a2.length - 1 ] );
-			});
-			
-			for ( File f : list ) {
-				bufs.add( ImageIO.read( f ) );
-			}
+			images = temporary.toArray( new BufferedImage[0] );
 		}
 		
-		BufferedImage[] images = bufs.toArray( new BufferedImage[0] );
+		String content = JOptionPane.showInputDialog( "The sum of height is  " 
+				+ full_height + ". So how tall is per picture? (Input a number, please!)", 0 );
+		int height = Integer.parseInt( content );
 		
-		int include = 10;
-		if ( include > len ) include = len;
-		int group_len = len % include == 0 ? len / include : len / include + 1;
+		/// 要合并的图片临时集合 ///
+		List<BufferedImage> temporary = new ArrayList<>( 20 );
 		
-		for ( int k = 0; k < group_len; ++k ) {
+		int tmp_h = 0; /// 计算图片高度临时变量 ///
+		
+		StringBuffer buf = new StringBuffer();
+		
+		for ( BufferedImage img : images ) {
+			
+			tmp_h += img.getHeight();
+			temporary.add( img );
+			
+			if ( tmp_h > 0 && tmp_h > height ) { /// 达到某个高度后开始合并操作 ///
 				
-				File to = new File( src_f, src_f.getName() + "-merge-" + DTUtil.formatAS(2) + ".jpg" );
+				File to = new File( src_f, src_f.getName() + "-merge-" + DTUtil.formatA(2) + "." + formatName );
+				System.out.println( to.getAbsolutePath() );
 				
-				BufferedImage[] buf = Arrays.copyOfRange( images, k * include, k * include + ( k == group_len - 1 ? ( len % include == 0 ? include : len % include ) : include ) );
+				buf.append( to.getAbsolutePath() + "\r\n" );
 				
-				///BufferedImage save_img = mergeHorizontal( max_width, max_height, buf );
-				BufferedImage save_img = mergeVertical( 30, 60, buf );
-				///BufferedImage save_img = mergeDoubleVertical( max_width, 160, max_height, 0, buf );
+				BufferedImage save_img = mergeVertical( 40, 40, temporary.toArray( new BufferedImage[0] ) );
+				ImageIO.write( save_img, formatName, to );
 				
-				ImageIO.write( save_img, "JPG", to );
-				
-				System.out.println( "Then save at \r\n" + to.getAbsolutePath() );
+				temporary.clear();
+				tmp_h = 0;
 				
 				Thread.sleep(1000);
+			}
 		}
 		
-	}
-
-
-
-	/**
-	 * /// 合并两层文件夹中的图片到指定的文件夹中 ///
-	 * @throws IOException
-	 */
-	public void MergeEnglish1() throws IOException {
-		
-		String image_folder = "";
-		String to_folder = "";
-		
-		String[] suffix = { ".jpg", ".png", ".bmp" };
-		
-		File[] folders = new File( image_folder ).listFiles();
-		
-		for ( int i = 0; i < folders.length; ++i ) {
-				
-				File cur_folder = folders[i];
-				
-				File[] files = cur_folder.listFiles( ( f ) -> {
-						boolean r = false;
-						for ( String s0 : suffix ) {
-								if ( f.getName().endsWith( s0 ) == true ) {
-									 r = true;
-									 break;
-								}
-						}
-						return r;
-				});
-				
-				if ( files == null )
-					continue;
-				
-				int files_len = files.length;
-				
-				BufferedImage[] images = new BufferedImage[ files_len ];
-				int max_width = 0;
-				int max_height = 0;
+		/// 若存在最后未达到高度的图片,则仍要合并 ///
+		if ( temporary.isEmpty() == false && temporary.size() > 0 ) {
 			
-				for ( int j = 0; j < files_len; ++j ) {
-					
-						BufferedImage cur_img = ImageIO.read( files[j] );
-						images[j] = cur_img;
-						
-						int cur_w = cur_img.getWidth();
-						int cur_h = cur_img.getHeight();
-						
-						max_width = cur_w > max_width ? cur_w : max_width;
-						max_height = cur_h > max_height ? cur_h : max_height;
-				}
-				
-				
-				int include = 5;
-				int group_len = files_len % include == 0 ? files_len / include : files_len / include + 1;
-				
-				for ( int k = 0; k < group_len; ++k ) {
-						BufferedImage[] buf = Arrays.copyOfRange( images, k * include, k * include + include );
-						///BufferedImage save_img = mergeHorizontal( max_width, max_height, images );
-						///BufferedImage save_img = mergeVertical( max_width, max_height, images );
-						BufferedImage save_img = mergeDoubleVertical( max_width, 160, max_height, 0, buf );
-						ImageIO.write( save_img, "JPG", new File( to_folder, "class1-6-" + cur_folder.getName() + "-" + ( k + 1 ) + "-2height.jpg" ) );
-				}
-				
+			File to = new File( src_f, src_f.getName() + "-merge-" + DTUtil.formatA(2) + "." + formatName );
+			System.out.println( to.getAbsolutePath() );
+			
+			buf.append( to.getAbsolutePath() + "\r\n" );
+			
+			BufferedImage save_img = mergeVertical( 40, 40, temporary.toArray( new BufferedImage[0] ) );
+			ImageIO.write( save_img, formatName, to );
 		}
+		
+		JOptionPane.showMessageDialog( null, buf.toString() );
 		
 	}
 	
@@ -327,7 +296,14 @@ public class MergeImage {
 	}
 	
 	
+	public static final String suffix( File f ) {
+		return suffix( f.getName() );
+	}
 	
+	public static final String suffix( String n ) {
+		int i = n.lastIndexOf( "." );
+		return n.substring( i + 1 );
+	}
 	
 	
 
