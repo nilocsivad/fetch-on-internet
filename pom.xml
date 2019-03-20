@@ -2,19 +2,26 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>com.iam-vip.fetch-on-internet</groupId>
-  <artifactId>fetch-on-internet</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
-  <packaging>jar</packaging>
+	<groupId>com.iam-vip.fetch-on-internet</groupId>
+	<artifactId>fetch-on-internet</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>jar</packaging>
+	
+	<name>fetch-on-internet</name>
+	<url>http://maven.apache.org</url>
+	
+	<properties>
+	  <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+	
+	<repositories>
+	    <repository>
+	        <id>jaudiotagger-repository</id>
+	        <url>https://dl.bintray.com/ijabz/maven</url>
+	    </repository>
+	</repositories>
 
-  <name>fetch-on-internet</name>
-  <url>http://maven.apache.org</url>
-
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
-
-  <dependencies>
+  	<dependencies>
 
 		<dependency>
 			<groupId>junit</groupId>
@@ -57,5 +64,11 @@
 			<scope>runtime</scope>
 		</dependency>
 		
-  </dependencies>
+	    <dependency>
+	        <groupId>net.jthink</groupId>
+	        <artifactId>jaudiotagger</artifactId>
+	        <version>2.2.5</version>
+	    </dependency>
+		
+  	</dependencies>
 </project>
