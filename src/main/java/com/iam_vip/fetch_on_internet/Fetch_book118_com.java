@@ -3,6 +3,7 @@
  */
 package com.iam_vip.fetch_on_internet;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.security.cert.CertificateException;
@@ -33,6 +34,8 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import com.google.gson.Gson;
 import com.iam_vip.fetch_on_internet.file.DownloadFile;
@@ -56,14 +59,12 @@ public class Fetch_book118_com {
 	 */
 	public static void main(String[] args) throws Exception {
 
-		String book118_url = "https://max.book118.com/html/2017/1027/138023162.shtm";
+		String book118_url = "https://max.book118.com/html/2018/0316/157466994.shtm";
 		
-		String save_folder =  "/Users/Colin/Documents/aaaaaa";
+		String save_folder =  "/Users/Colin/Documents/大学英语泛读";
 		
-		
-		
-		
-		
+		boolean isFree = false;
+		int max_page = 120;
 		
 		
 		
@@ -77,15 +78,101 @@ public class Fetch_book118_com {
 		
 		
 		
-		String[] arr1 = book118_url.split( "/" );
+		
+		
+		if (isFree) {
+			fetchFreeVersion(book118_url, save_folder);
+		} else {
+			fetchTrialVersion(book118_url, save_folder, max_page);
+		}
+		
+	}
+	
+	/**
+	 * @param URL
+	 * @param DIR
+	 * @throws Exception
+	 * @throws IOException
+	 */
+	private static void fetchTrialVersion(String URL, String DIR, int max_page) throws Exception, IOException {
+		String[] arr1 = URL.split( "/" );
 		String number = arr1[ arr1.length - 1 ].split( "\\." )[0];
+		String next_url = "https://max.book118.com/index.php?g=Home&m=NewView&v=20190917&a=index&aid=" + number;
+		System.out.println( "" + next_url );
 		
+		Document doc0 = Jsoup.connect( next_url ).get();
+		Elements scripts = doc0.getElementsByTag("script");
+		String token = null;
+		for (Element item : scripts) {
+			String tag_text = item.outerHtml();
+			int index = 0;
+			if ( (index=tag_text.indexOf("view_token")) > 0 ) {
+				index = tag_text.indexOf("'", index+11);
+				token = tag_text.substring(index+1, tag_text.indexOf("'", index+11));
+				break;
+			}
+		}
+		if (token != null && token.length() > 11) {
+		} else {
+			System.err.println("Fail to get the TOKEN string!");
+			return;
+		}
+		
+		Map<String, String> PAGE_URL = new HashMap<>(300);
+		
+		/// https://openapi.book118.com/getPreview.html?
+		/// &project_id=1&aid=157466994&view_token=41eoGhDknh_aK6Rl1OJS0h8jx4yNWxto
+		/// &page=1
+		String prefix = "https://openapi.book118.com/getPreview.html?project_id=1&aid=" + number + "&view_token=" + token + "&page=";
+		for (int i = 1; i <= max_page; ++i) {
+			HttpUriRequest request = new HttpGet( prefix + i + "&t=" + RandomString.random( 16 ) );
+			CloseableHttpResponse response = doRequest(request);
+			String json = responseText( response );
+			int index = json.indexOf("data");
+			index = json.indexOf("{", index+6);
+			int index2 = json.indexOf("}", index);
+			if (index2 > 0) {
+				json = json.substring(index, index2+1);
+				Gson gson = new Gson();
+				@SuppressWarnings("unchecked")
+				HashMap<String, String> jsonMap = gson.fromJson(json, HashMap.class);
+				for (Map.Entry<String, String> item : jsonMap.entrySet()) {
+					String value = item.getValue();
+					if (value.length() > 10) {
+						int n = Integer.parseInt(item.getKey());
+						i = n > i ? n : i;
+						PAGE_URL.put(item.getKey(), item.getValue());
+					}
+				}
+				//System.out.println("---> " + i);
+			}
+		}
+		
+		int page = 1;
+		for (Map.Entry<String, String> item : PAGE_URL.entrySet()) {
+			System.out.println("https:" + item.getValue());
+			DownloadFile.download( "https:" + item.getValue(), DIR, "PAGE_" + page + ".png" );
+			Thread.sleep( 100 );
+			page++;
+		}
+		
+	}
+
+	/**
+	 * @param URL
+	 * @param DIR
+	 * @throws Exception
+	 * @throws IOException
+	 */
+	private static void fetchFreeVersion(String URL, String DIR) throws Exception, IOException {
+		String[] arr1 = URL.split( "/" );
+		String number = arr1[ arr1.length - 1 ].split( "\\." )[0];
 		String next_url = "https://max.book118.com/index.php?g=Home&m=View&a=viewUrl&flag=1&cid=" + number;
 		System.out.println( "" + next_url );
 		
         HttpUriRequest request = new HttpGet( next_url );
 		
-        	CloseableHttpResponse response = doRequest(request);
+    	CloseableHttpResponse response = doRequest(request);
 		
 		next_url = "https:" + responseText( response );
 		System.out.println( next_url );
@@ -107,18 +194,13 @@ public class Fetch_book118_com {
 		next_url = prefix + pdf;
 		System.out.println( next_url );
 		
-		
-		
 		Document htmlDoc = Jsoup.connect( next_url ).get();
 		String img0 = htmlDoc.getElementById( "Img" ).val();
 		String furl = htmlDoc.getElementById( "Furl" ).val();
 		String limit = htmlDoc.getElementById( "ReadLimit" ).val();
 		
-		
-		log( img0, save_folder, prefix, f__, limit, furl );
-		
-		next( img0, save_folder, prefix, f__, limit, furl );
-		
+		log( img0, DIR, prefix, f__, limit, furl );
+		next( img0, DIR, prefix, f__, limit, furl );
 	}
 	
 	public static void log( Object... objs ) {
